@@ -39,3 +39,93 @@ from(
   ) t
 )tt group by tt.time_id
 order by tt.time_id
+
+
+--截取日期
+select Sysdate-1  "上一天此天此时此分此秒"
+       ,trunc(Sysdate-1,'hh') "上一天此天此小时"
+       ,trunc(Sysdate-1,'hh24') "上一天此天此小时"
+       ,trunc(Sysdate-1,'dd') "上一天此天"
+       ,trunc(Sysdate-1,'MM') "上一天此月"
+       ,trunc(Sysdate,'yy') "这年"
+from dual;
+
+
+数据库（实例）
+
+用户
+
+表管理
+	
+	--给表添加注释
+	comment on table tableName is '表注释'
+
+字段管理
+
+--修改某字段可为空/非空
+alter table 表名 modify 字段名 not null		(modify 修改)
+--给某表某字段添加注释
+comment on column tableName.columnName is '注释'
+	如：comment on column temp.stbid is '机顶盒ID'
+	（comment 评论）
+
+
+
+
+--外链接 ，哪边少把加号放哪边
+Select nmrt.timevalue hour,
+       t3.值1,
+       t3.值2
+from(
+  select substr(tt.time_id,length(tt.time_id)-1,2) time_id,avg(值1) 值1,avg(值2) 值2
+  from(
+    Select 
+      t.time_id
+      ,Case when t.kpi_no= 100002663 then t.avgvalue else null end 值1 --else后不能是0，不然平均就不对，所有不写或为null
+      ,Case when t.kpi_no= 120000093 then t.avgvalue end 值2
+    from (
+      select kpi_no,time_id,round(avg(valueavg),1) avgvalue
+      --Select *
+      from Pm_Hou_p_Reshost 
+        where kpi_No in (100002663,120000093) 
+        and kbp=1411 
+        and time_id >=2013011000                   
+        and time_id < 2013011100 
+        group by kpi_no,time_id
+    ) t
+  )tt group by tt.time_id
+  order by tt.time_id
+) t3,(
+  Select * 
+  from Nmr_Timetype nt
+  where nt.Timetype='day'
+  )nmrt
+  where t3.time_id (+)= nmrt.timevalue
+  order by Hour
+  
+  
+  
+  
+  
+  
+  --创建表空间
+create tablespace mySpace1 
+datafile 'D:/app/L/oradata/orcl/mySpace1_space.dbf' size 512m
+autoextend on
+next 200m maxsize 20480m
+extent management local;
+--创建零售表空间
+create temporary tablespace mySpace1_temp 
+tempfile 'D:/app/L/oradata/orcl/mySpace1_temp.dbf' 
+size 200m
+autoextend on
+next 50m maxsize 20480m
+extent management local;
+--创建用户并指定表空间和临时表空间
+create user user1 identified by 123456 
+default　tablespace mySpace1
+temporary tablespace mySpace1_temp
+--给用户session
+grant connect, resource to user1;
+--删除用户
+drop user user1 cascade;
